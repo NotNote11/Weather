@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stratos Weather</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: #0b0f1a;
+  color: #dde3ef;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app { display:flex; height:100vh; }
+
+/* Sidebar */
+.sidebar {
+  width: 320px;
+  flex-shrink: 0;
+  background: #0e1320;
+  border-right: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.logo {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: #fff;
+  margin-bottom: 16px;
+}
+.logo span { color: #5eadf5; }
+
+.search-wrap { position: relative; }
+.search-wrap svg {
+  position: absolute;
+  left: 12px; top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.3;
+  pointer-events: none;
+}
+input[type="text"] {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 10px 12px 10px 36px;
+  color: #dde3ef;
+  font-family: inherit;
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+input[type="text"]:focus { border-color: #5eadf5; }
+input[type="text"]::placeholder { color: #2e3a4e; }
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.tab-btn {
+  flex: 1;
+  padding: 6px 4px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px;
+  color: #3d4a60;
+  font-family: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: 0.15s;
+}
+.tab-btn:hover { color: #dde3ef; background: rgba(255,255,255,0.04); }
+.tab-btn.active { background: rgba(94,173,245,0.1); border-color: rgba(94,173,245,0.3); color: #5eadf5; }
+
+.city-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px 16px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.06) transparent;
+}
+.city-list::-webkit-scrollbar { width: 3px; }
+.city-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 4px; }
+
+.region-label {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #2e3a4e;
+  padding: 14px 8px 6px;
+}
+
+.city-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-bottom: 2px;
+}
+.city-item:hover { background: rgba(255,255,255,0.04); }
+.city-item.active { background: rgba(94,173,245,0.08); }
+.city-item.active .city-name { color: #5eadf5; }
+
+.city-left { display: flex; align-items: center; gap: 10px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.city-name { font-size: 0.86rem; font-weight: 500; }
+.city-country { font-size: 0.68rem; color: #3d4a60; margin-top: 1px; }
+.city-right { text-align: right; }
+.city-temp { font-size: 0.88rem; font-weight: 600; }
+.city-time { font-size: 0.65rem; color: #3d4a60; margin-top: 2px; }
+
+.no-results { display: none; text-align: center; padding: 32px 16px; color: #2e3a4e; font-size: 0.82rem; }
+.no-results.show { display: block; }
+
+/* Main */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 40px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.topbar-date { font-size: 0.78rem; color: #3d4a60; }
+.unit-btn {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 6px 14px;
+  color: #7a8fa8;
+  font-family: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: 0.15s;
+}
+.unit-btn:hover { color: #dde3ef; }
+
+.content { flex: 1; display: flex; overflow: hidden; }
+
+/* Hero */
+.hero {
+  flex: 1;
+  padding: 48px 52px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.hero-city { font-size: 2.8rem; font-weight: 300; margin-bottom: 4px; }
+.hero-sub { font-size: 0.82rem; color: #3d4a60; margin-bottom: 32px; }
+
+.hero-temp-row { display: flex; align-items: flex-end; gap: 24px; }
+.hero-temp { font-size: 7rem; font-weight: 200; line-height: 1; letter-spacing: -3px; }
+.hero-temp-aside { padding-bottom: 10px; }
+.feels { font-size: 0.76rem; color: #3d4a60; }
+.feels-val { font-size: 1.1rem; font-weight: 500; margin-top: 2px; }
+.condition { display: flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 0.84rem; color: #7a8fa8; }
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.stat {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
+  padding: 18px 16px;
+  transition: background 0.15s;
+}
+.stat:hover { background: rgba(255,255,255,0.05); }
+.stat-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; color: #3d4a60; display: block; margin-bottom: 8px; }
+.stat-val { font-size: 1.4rem; font-weight: 500; }
+.stat-unit { font-size: 0.75rem; color: #3d4a60; margin-left: 2px; }
+.stat-note { font-size: 0.68rem; color: #3d4a60; margin-top: 4px; }
+
+/* Right panel */
+.right {
+  width: 240px;
+  border-left: 1px solid rgba(255,255,255,0.06);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.right::-webkit-scrollbar { display: none; }
+
+.panel-section {
+  padding: 22px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.panel-title {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #2e3a4e;
+  margin-bottom: 14px;
+}
+
+.forecast-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.forecast-row:last-child { border: none; }
+.fc-day { font-size: 0.76rem; color: #3d4a60; width: 36px; }
+.fc-icon { font-size: 17px; }
+.fc-temps { font-size: 0.76rem; text-align: right; }
+.fc-hi { color: #dde3ef; }
+.fc-lo { color: #3d4a60; margin-left: 5px; }
+
+.meter { margin-bottom: 12px; }
+.meter:last-child { margin-bottom: 0; }
+.meter-header { display: flex; justify-content: space-between; font-size: 0.74rem; margin-bottom: 6px; }
+.meter-name { color: #7a8fa8; }
+.meter-reading { color: #5eadf5; }
+.bar { height: 4px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; }
+
+.sun-row { display: flex; gap: 10px; }
+.sun-card {
+  flex: 1;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 10px;
+  padding: 12px;
+  text-align: center;
+}
+.sun-card .ico { font-size: 18px; margin-bottom: 6px; }
+.sun-card .lbl { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; color: #2e3a4e; }
+.sun-card .val { font-size: 0.78rem; color: #7a8fa8; margin-top: 3px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">Stra<span>tos</span></div>
+      <div class="search-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="searchInput" placeholder="Search city or country…" oninput="renderSidebar()">
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="setTab('all',this)">All</button>
+      <button class="tab-btn" onclick="setTab('asia',this)">Asia</button>
+      <button class="tab-btn" onclick="setTab('europe',this)">Europe</button>
+      <button class="tab-btn" onclick="setTab('americas',this)">Americas</button>
+    </div>
+
+    <div class="city-list" id="cityList">
+      <div class="no-results" id="noResults">No cities found</div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <span class="topbar-date" id="topDate"></span>
+      <button class="unit-btn" id="unitBtn" onclick="toggleUnit()">Switch to °F</button>
+    </div>
+    <div class="content">
+      <div class="hero" id="hero"></div>
+      <div class="right" id="right"></div>
+    </div>
+  </div>
+
+</div>
+<script>
+const cities = [
+  { id:'lalbandi',    name:'Lalbandi',       country:'Nepal',          continent:'asia',     region:'South Asia',      time:'10:30 PM', temp:24, feels:22, cond:'Clear night',           icon:'✨', dot:'#5eadf5', humidity:54, wind:3,  vis:10, pressure:1012, uv:0,  aqi:42,  sunrise:'6:02 AM', sunset:'6:18 PM', forecast:[{d:'Mon',i:'☀️',h:27,l:17},{d:'Tue',i:'⛅',h:25,l:16},{d:'Wed',i:'🌧️',h:21,l:14},{d:'Thu',i:'⛅',h:24,l:16},{d:'Fri',i:'☀️',h:28,l:18}] },
+  { id:'janakpur',    name:'Janakpur',        country:'Nepal',          continent:'asia',     region:'South Asia',      time:'10:30 PM', temp:26, feels:25, cond:'Warm night air',        icon:'🌙', dot:'#fbbf24', humidity:60, wind:5,  vis:9,  pressure:1008, uv:0,  aqi:58,  sunrise:'6:00 AM', sunset:'6:17 PM', forecast:[{d:'Mon',i:'☀️',h:29,l:19},{d:'Tue',i:'☀️',h:30,l:20},{d:'Wed',i:'⛅',h:27,l:18},{d:'Thu',i:'🌧️',h:24,l:17},{d:'Fri',i:'⛅',h:26,l:18}] },
+  { id:'kathmandu',   name:'Kathmandu',       country:'Nepal',          continent:'asia',     region:'South Asia',      time:'10:30 PM', temp:16, feels:14, cond:'Misty night',           icon:'🌫️', dot:'#94a3b8', humidity:78, wind:2,  vis:4,  pressure:1018, uv:0,  aqi:95,  sunrise:'6:05 AM', sunset:'6:20 PM', forecast:[{d:'Mon',i:'⛅',h:19,l:10},{d:'Tue',i:'🌥️',h:17,l:9},{d:'Wed',i:'🌧️',h:15,l:8},{d:'Thu',i:'⛅',h:18,l:11},{d:'Fri',i:'☀️',h:21,l:12}] },
+  { id:'pokhara',     name:'Pokhara',         country:'Nepal',          continent:'asia',     region:'South Asia',      time:'10:30 PM', temp:19, feels:18, cond:'Clear night',           icon:'⭐', dot:'#a78bfa', humidity:65, wind:4,  vis:12, pressure:1015, uv:0,  aqi:30,  sunrise:'6:03 AM', sunset:'6:19 PM', forecast:[{d:'Mon',i:'☀️',h:23,l:13},{d:'Tue',i:'☀️',h:24,l:14},{d:'Wed',i:'⛅',h:21,l:12},{d:'Thu',i:'🌧️',h:18,l:11},{d:'Fri',i:'⛅',h:20,l:12}] },
+  { id:'delhi',       name:'New Delhi',       country:'India',          continent:'asia',     region:'South Asia',      time:'10:00 PM', temp:29, feels:32, cond:'Hazy & warm',           icon:'🌫️', dot:'#f97316', humidity:45, wind:8,  vis:6,  pressure:1006, uv:0,  aqi:168, sunrise:'6:15 AM', sunset:'6:35 PM', forecast:[{d:'Mon',i:'☀️',h:33,l:20},{d:'Tue',i:'☀️',h:35,l:22},{d:'Wed',i:'⛅',h:32,l:21},{d:'Thu',i:'⛅',h:30,l:20},{d:'Fri',i:'🌧️',h:28,l:19}] },
+  { id:'mumbai',      name:'Mumbai',          country:'India',          continent:'asia',     region:'South Asia',      time:'10:00 PM', temp:31, feels:36, cond:'Hot & humid',           icon:'🌡️', dot:'#f97316', humidity:80, wind:12, vis:8,  pressure:1004, uv:0,  aqi:85,  sunrise:'6:20 AM', sunset:'6:40 PM', forecast:[{d:'Mon',i:'⛅',h:33,l:26},{d:'Tue',i:'🌧️',h:30,l:24},{d:'Wed',i:'🌧️',h:28,l:24},{d:'Thu',i:'⛅',h:31,l:25},{d:'Fri',i:'☀️',h:33,l:26}] },
+  { id:'dhaka',       name:'Dhaka',           country:'Bangladesh',     continent:'asia',     region:'South Asia',      time:'10:30 PM', temp:30, feels:34, cond:'Humid & hazy',          icon:'🌫️', dot:'#fbbf24', humidity:78, wind:6,  vis:5,  pressure:1006, uv:0,  aqi:140, sunrise:'5:58 AM', sunset:'6:10 PM', forecast:[{d:'Mon',i:'⛅',h:32,l:22},{d:'Tue',i:'☀️',h:33,l:23},{d:'Wed',i:'🌧️',h:28,l:22},{d:'Thu',i:'⛅',h:30,l:22},{d:'Fri',i:'☀️',h:32,l:23}] },
+  { id:'karachi',     name:'Karachi',         country:'Pakistan',       continent:'asia',     region:'South Asia',      time:'9:30 PM',  temp:30, feels:32, cond:'Warm sea breeze',       icon:'🌊', dot:'#38bdf8', humidity:65, wind:16, vis:12, pressure:1010, uv:0,  aqi:88,  sunrise:'6:20 AM', sunset:'6:40 PM', forecast:[{d:'Mon',i:'☀️',h:32,l:24},{d:'Tue',i:'☀️',h:33,l:25},{d:'Wed',i:'⛅',h:31,l:24},{d:'Thu',i:'☀️',h:34,l:25},{d:'Fri',i:'☀️',h:35,l:26}] },
+  { id:'tokyo',       name:'Tokyo',           country:'Japan',          continent:'asia',     region:'East Asia',       time:'11:30 PM', temp:14, feels:12, cond:'Cherry blossom skies',  icon:'🌸', dot:'#f9a8d4', humidity:55, wind:10, vis:14, pressure:1018, uv:0,  aqi:35,  sunrise:'5:45 AM', sunset:'6:05 PM', forecast:[{d:'Mon',i:'⛅',h:17,l:9},{d:'Tue',i:'🌧️',h:14,l:8},{d:'Wed',i:'☀️',h:18,l:10},{d:'Thu',i:'☀️',h:20,l:11},{d:'Fri',i:'⛅',h:16,l:9}] },
+  { id:'beijing',     name:'Beijing',         country:'China',          continent:'asia',     region:'East Asia',       time:'10:30 PM', temp:18, feels:16, cond:'Mostly clear',          icon:'🌙', dot:'#5eadf5', humidity:38, wind:15, vis:10, pressure:1014, uv:0,  aqi:110, sunrise:'5:55 AM', sunset:'6:30 PM', forecast:[{d:'Mon',i:'☀️',h:22,l:11},{d:'Tue',i:'⛅',h:19,l:9},{d:'Wed',i:'🌧️',h:15,l:8},{d:'Thu',i:'☀️',h:20,l:10},{d:'Fri',i:'☀️',h:23,l:12}] },
+  { id:'seoul',       name:'Seoul',           country:'South Korea',    continent:'asia',     region:'East Asia',       time:'11:30 PM', temp:11, feels:8,  cond:'Cool & clear',          icon:'🌙', dot:'#93c5fd', humidity:42, wind:18, vis:16, pressure:1022, uv:0,  aqi:40,  sunrise:'5:50 AM', sunset:'6:20 PM', forecast:[{d:'Mon',i:'⛅',h:14,l:6},{d:'Tue',i:'☀️',h:17,l:8},{d:'Wed',i:'☀️',h:18,l:9},{d:'Thu',i:'⛅',h:15,l:7},{d:'Fri',i:'🌧️',h:12,l:6}] },
+  { id:'singapore',   name:'Singapore',       country:'Singapore',      continent:'asia',     region:'Southeast Asia',  time:'10:30 PM', temp:28, feels:33, cond:'Tropical night',        icon:'🌴', dot:'#4ade80', humidity:85, wind:6,  vis:10, pressure:1008, uv:0,  aqi:48,  sunrise:'7:02 AM', sunset:'7:12 PM', forecast:[{d:'Mon',i:'🌧️',h:30,l:25},{d:'Tue',i:'⛅',h:31,l:25},{d:'Wed',i:'🌧️',h:29,l:25},{d:'Thu',i:'⛅',h:31,l:26},{d:'Fri',i:'☀️',h:32,l:26}] },
+  { id:'bangkok',     name:'Bangkok',         country:'Thailand',       continent:'asia',     region:'Southeast Asia',  time:'9:30 PM',  temp:33, feels:38, cond:'Humid tropical',        icon:'🌺', dot:'#f97316', humidity:82, wind:5,  vis:8,  pressure:1006, uv:0,  aqi:75,  sunrise:'6:05 AM', sunset:'6:25 PM', forecast:[{d:'Mon',i:'🌧️',h:34,l:26},{d:'Tue',i:'⛅',h:33,l:25},{d:'Wed',i:'🌧️',h:31,l:25},{d:'Thu',i:'⛅',h:33,l:26},{d:'Fri',i:'☀️',h:35,l:27}] },
+  { id:'jakarta',     name:'Jakarta',         country:'Indonesia',      continent:'asia',     region:'Southeast Asia',  time:'9:30 PM',  temp:27, feels:31, cond:'Tropical shower',       icon:'🌧️', dot:'#60a5fa', humidity:88, wind:7,  vis:6,  pressure:1008, uv:0,  aqi:95,  sunrise:'5:58 AM', sunset:'6:02 PM', forecast:[{d:'Mon',i:'🌧️',h:29,l:24},{d:'Tue',i:'🌧️',h:28,l:24},{d:'Wed',i:'⛅',h:30,l:25},{d:'Thu',i:'🌧️',h:27,l:24},{d:'Fri',i:'⛅',h:29,l:24}] },
+  { id:'manila',      name:'Manila',          country:'Philippines',    continent:'asia',     region:'Southeast Asia',  time:'10:30 PM', temp:29, feels:35, cond:'Tropical night',        icon:'🌴', dot:'#4ade80', humidity:86, wind:10, vis:8,  pressure:1008, uv:0,  aqi:80,  sunrise:'5:40 AM', sunset:'5:55 PM', forecast:[{d:'Mon',i:'🌧️',h:32,l:25},{d:'Tue',i:'⛅',h:31,l:25},{d:'Wed',i:'⛈️',h:29,l:24},{d:'Thu',i:'⛅',h:31,l:25},{d:'Fri',i:'☀️',h:33,l:26}] },
+  { id:'dubai',       name:'Dubai',           country:'UAE',            continent:'asia',     region:'Middle East',     time:'8:30 PM',  temp:34, feels:38, cond:'Desert night',          icon:'🏜️', dot:'#fbbf24', humidity:28, wind:14, vis:15, pressure:1004, uv:0,  aqi:52,  sunrise:'6:10 AM', sunset:'6:25 PM', forecast:[{d:'Mon',i:'☀️',h:38,l:26},{d:'Tue',i:'☀️',h:40,l:28},{d:'Wed',i:'☀️',h:39,l:27},{d:'Thu',i:'☀️',h:37,l:26},{d:'Fri',i:'⛅',h:35,l:25}] },
+  { id:'riyadh',      name:'Riyadh',          country:'Saudi Arabia',   continent:'asia',     region:'Middle East',     time:'8:30 PM',  temp:32, feels:30, cond:'Desert dusk',           icon:'🌅', dot:'#f97316', humidity:18, wind:12, vis:15, pressure:1006, uv:0,  aqi:65,  sunrise:'5:55 AM', sunset:'6:15 PM', forecast:[{d:'Mon',i:'☀️',h:36,l:24},{d:'Tue',i:'☀️',h:38,l:25},{d:'Wed',i:'☀️',h:37,l:24},{d:'Thu',i:'☀️',h:36,l:23},{d:'Fri',i:'⛅',h:33,l:22}] },
+  { id:'telaviv',     name:'Tel Aviv',        country:'Israel',         continent:'asia',     region:'Middle East',     time:'7:30 PM',  temp:20, feels:19, cond:'Mediterranean evening', icon:'🌊', dot:'#38bdf8', humidity:65, wind:14, vis:20, pressure:1014, uv:0,  aqi:25,  sunrise:'6:15 AM', sunset:'7:10 PM', forecast:[{d:'Mon',i:'☀️',h:23,l:14},{d:'Tue',i:'☀️',h:24,l:15},{d:'Wed',i:'⛅',h:21,l:13},{d:'Thu',i:'🌧️',h:18,l:12},{d:'Fri',i:'☀️',h:22,l:14}] },
+  { id:'tehran',      name:'Tehran',          country:'Iran',           continent:'asia',     region:'Middle East',     time:'9:00 PM',  temp:15, feels:12, cond:'Cool clear night',      icon:'🌙', dot:'#5eadf5', humidity:40, wind:10, vis:15, pressure:1016, uv:0,  aqi:75,  sunrise:'6:20 AM', sunset:'7:00 PM', forecast:[{d:'Mon',i:'☀️',h:20,l:9},{d:'Tue',i:'☀️',h:22,l:10},{d:'Wed',i:'⛅',h:18,l:8},{d:'Thu',i:'⛅',h:16,l:7},{d:'Fri',i:'☀️',h:19,l:9}] },
+  { id:'moscow',      name:'Moscow',          country:'Russia',         continent:'europe',   region:'Eastern Europe',  time:'7:30 PM',  temp:-2, feels:-8, cond:'Light snowfall',        icon:'❄️', dot:'#e0f2fe', humidity:88, wind:18, vis:2,  pressure:1028, uv:0,  aqi:22,  sunrise:'6:45 AM', sunset:'7:30 PM', forecast:[{d:'Mon',i:'❄️',h:0,l:-5},{d:'Tue',i:'❄️',h:-1,l:-6},{d:'Wed',i:'⛅',h:2,l:-3},{d:'Thu',i:'🌥️',h:4,l:-1},{d:'Fri',i:'⛅',h:3,l:-2}] },
+  { id:'kyiv',        name:'Kyiv',            country:'Ukraine',        continent:'europe',   region:'Eastern Europe',  time:'7:30 PM',  temp:6,  feels:2,  cond:'Overcast evening',      icon:'🌥️', dot:'#64748b', humidity:70, wind:14, vis:10, pressure:1016, uv:0,  aqi:32,  sunrise:'5:45 AM', sunset:'7:00 PM', forecast:[{d:'Mon',i:'⛅',h:9,l:3},{d:'Tue',i:'☀️',h:12,l:4},{d:'Wed',i:'☀️',h:14,l:5},{d:'Thu',i:'⛅',h:10,l:3},{d:'Fri',i:'🌧️',h:8,l:2}] },
+  { id:'warsaw',      name:'Warsaw',          country:'Poland',         continent:'europe',   region:'Eastern Europe',  time:'5:30 PM',  temp:5,  feels:1,  cond:'Cold & windy',          icon:'🌬️', dot:'#93c5fd', humidity:68, wind:25, vis:10, pressure:1016, uv:2,  aqi:55,  sunrise:'5:30 AM', sunset:'6:50 PM', forecast:[{d:'Mon',i:'⛅',h:8,l:2},{d:'Tue',i:'☀️',h:11,l:3},{d:'Wed',i:'☀️',h:13,l:4},{d:'Thu',i:'⛅',h:9,l:3},{d:'Fri',i:'❄️',h:3,l:-2}] },
+  { id:'london',      name:'London',          country:'United Kingdom', continent:'europe',   region:'Western Europe',  time:'4:30 PM',  temp:9,  feels:6,  cond:'Drizzling rain',        icon:'🌦️', dot:'#60a5fa', humidity:92, wind:14, vis:6,  pressure:1010, uv:2,  aqi:38,  sunrise:'6:05 AM', sunset:'7:20 PM', forecast:[{d:'Mon',i:'🌧️',h:10,l:5},{d:'Tue',i:'⛅',h:12,l:6},{d:'Wed',i:'⛅',h:13,l:7},{d:'Thu',i:'☀️',h:15,l:8},{d:'Fri',i:'🌧️',h:11,l:6}] },
+  { id:'paris',       name:'Paris',           country:'France',         continent:'europe',   region:'Western Europe',  time:'5:30 PM',  temp:13, feels:11, cond:'Partly cloudy',         icon:'⛅', dot:'#94a3b8', humidity:68, wind:10, vis:12, pressure:1016, uv:3,  aqi:35,  sunrise:'6:55 AM', sunset:'7:45 PM', forecast:[{d:'Mon',i:'☀️',h:16,l:8},{d:'Tue',i:'☀️',h:18,l:9},{d:'Wed',i:'⛅',h:15,l:7},{d:'Thu',i:'🌧️',h:12,l:6},{d:'Fri',i:'⛅',h:14,l:7}] },
+  { id:'berlin',      name:'Berlin',          country:'Germany',        continent:'europe',   region:'Western Europe',  time:'5:30 PM',  temp:8,  feels:5,  cond:'Overcast',              icon:'🌥️', dot:'#64748b', humidity:74, wind:16, vis:9,  pressure:1014, uv:2,  aqi:28,  sunrise:'5:50 AM', sunset:'7:00 PM', forecast:[{d:'Mon',i:'⛅',h:11,l:4},{d:'Tue',i:'☀️',h:14,l:5},{d:'Wed',i:'☀️',h:15,l:6},{d:'Thu',i:'⛅',h:12,l:5},{d:'Fri',i:'🌧️',h:9,l:4}] },
+  { id:'amsterdam',   name:'Amsterdam',       country:'Netherlands',    continent:'europe',   region:'Western Europe',  time:'5:30 PM',  temp:10, feels:7,  cond:'Windy & rainy',         icon:'🌧️', dot:'#60a5fa', humidity:85, wind:28, vis:8,  pressure:1006, uv:2,  aqi:22,  sunrise:'6:10 AM', sunset:'7:25 PM', forecast:[{d:'Mon',i:'🌧️',h:11,l:6},{d:'Tue',i:'⛅',h:13,l:7},{d:'Wed',i:'☀️',h:15,l:8},{d:'Thu',i:'⛅',h:12,l:7},{d:'Fri',i:'🌧️',h:10,l:5}] },
+  { id:'rome',        name:'Rome',            country:'Italy',          continent:'europe',   region:'Southern Europe', time:'5:30 PM',  temp:18, feels:16, cond:'Sunny afternoon',       icon:'☀️', dot:'#fbbf24', humidity:45, wind:8,  vis:20, pressure:1018, uv:5,  aqi:40,  sunrise:'6:30 AM', sunset:'7:30 PM', forecast:[{d:'Mon',i:'☀️',h:21,l:12},{d:'Tue',i:'☀️',h:22,l:13},{d:'Wed',i:'⛅',h:19,l:11},{d:'Thu',i:'🌧️',h:16,l:10},{d:'Fri',i:'☀️',h:20,l:12}] },
+  { id:'madrid',      name:'Madrid',          country:'Spain',          continent:'europe',   region:'Southern Europe', time:'5:30 PM',  temp:22, feels:20, cond:'Sunny & warm',          icon:'☀️', dot:'#f97316', humidity:32, wind:12, vis:25, pressure:1016, uv:6,  aqi:30,  sunrise:'7:05 AM', sunset:'8:15 PM', forecast:[{d:'Mon',i:'☀️',h:25,l:14},{d:'Tue',i:'☀️',h:26,l:15},{d:'Wed',i:'⛅',h:22,l:13},{d:'Thu',i:'⛅',h:20,l:12},{d:'Fri',i:'☀️',h:24,l:14}] },
+  { id:'athens',      name:'Athens',          country:'Greece',         continent:'europe',   region:'Southern Europe', time:'7:30 PM',  temp:17, feels:15, cond:'Mediterranean cool',    icon:'🌊', dot:'#38bdf8', humidity:55, wind:12, vis:20, pressure:1016, uv:0,  aqi:35,  sunrise:'6:35 AM', sunset:'7:45 PM', forecast:[{d:'Mon',i:'☀️',h:20,l:12},{d:'Tue',i:'☀️',h:22,l:13},{d:'Wed',i:'⛅',h:18,l:11},{d:'Thu',i:'🌧️',h:15,l:10},{d:'Fri',i:'☀️',h:19,l:12}] },
+  { id:'istanbul',    name:'Istanbul',        country:'Turkey',         continent:'europe',   region:'Southern Europe', time:'7:30 PM',  temp:15, feels:13, cond:'Breezy evening',        icon:'🌬️', dot:'#38bdf8', humidity:60, wind:22, vis:14, pressure:1014, uv:0,  aqi:45,  sunrise:'6:20 AM', sunset:'7:15 PM', forecast:[{d:'Mon',i:'⛅',h:18,l:10},{d:'Tue',i:'☀️',h:20,l:11},{d:'Wed',i:'☀️',h:21,l:12},{d:'Thu',i:'⛅',h:17,l:10},{d:'Fri',i:'🌧️',h:14,l:9}] },
+  { id:'stockholm',   name:'Stockholm',       country:'Sweden',         continent:'europe',   region:'Northern Europe', time:'5:30 PM',  temp:4,  feels:0,  cond:'Cold & cloudy',         icon:'🌥️', dot:'#93c5fd', humidity:72, wind:20, vis:10, pressure:1020, uv:1,  aqi:15,  sunrise:'5:30 AM', sunset:'6:50 PM', forecast:[{d:'Mon',i:'⛅',h:6,l:1},{d:'Tue',i:'☀️',h:8,l:2},{d:'Wed',i:'☀️',h:10,l:3},{d:'Thu',i:'⛅',h:7,l:2},{d:'Fri',i:'❄️',h:2,l:-2}] },
+  { id:'oslo',        name:'Oslo',            country:'Norway',         continent:'europe',   region:'Northern Europe', time:'5:30 PM',  temp:2,  feels:-3, cond:'Cold twilight',         icon:'🌨️', dot:'#e0f2fe', humidity:75, wind:22, vis:8,  pressure:1024, uv:1,  aqi:12,  sunrise:'5:20 AM', sunset:'7:00 PM', forecast:[{d:'Mon',i:'❄️',h:3,l:-1},{d:'Tue',i:'⛅',h:5,l:0},{d:'Wed',i:'☀️',h:7,l:1},{d:'Thu',i:'⛅',h:5,l:0},{d:'Fri',i:'❄️',h:1,l:-3}] },
+  { id:'lisbon',      name:'Lisbon',          country:'Portugal',       continent:'europe',   region:'Southern Europe', time:'4:30 PM',  temp:19, feels:17, cond:'Atlantic breeze',       icon:'🌊', dot:'#38bdf8', humidity:52, wind:18, vis:22, pressure:1018, uv:4,  aqi:20,  sunrise:'7:10 AM', sunset:'7:55 PM', forecast:[{d:'Mon',i:'☀️',h:22,l:13},{d:'Tue',i:'☀️',h:23,l:14},{d:'Wed',i:'⛅',h:20,l:12},{d:'Thu',i:'🌧️',h:17,l:11},{d:'Fri',i:'☀️',h:21,l:12}] },
+  { id:'zurich',      name:'Zürich',          country:'Switzerland',    continent:'europe',   region:'Western Europe',  time:'5:30 PM',  temp:7,  feels:4,  cond:'Alpine chill',          icon:'🏔️', dot:'#93c5fd', humidity:65, wind:12, vis:15, pressure:1022, uv:3,  aqi:18,  sunrise:'6:35 AM', sunset:'7:40 PM', forecast:[{d:'Mon',i:'☀️',h:11,l:3},{d:'Tue',i:'☀️',h:13,l:4},{d:'Wed',i:'⛅',h:10,l:2},{d:'Thu',i:'❄️',h:4,l:-1},{d:'Fri',i:'⛅',h:8,l:1}] },
+  { id:'newyork',     name:'New York',        country:'USA',            continent:'americas', region:'North America',   time:'11:30 AM', temp:12, feels:9,  cond:'Sunny day',             icon:'☀️', dot:'#fbbf24', humidity:40, wind:10, vis:15, pressure:1020, uv:5,  aqi:32,  sunrise:'6:50 AM', sunset:'7:20 PM', forecast:[{d:'Mon',i:'☀️',h:15,l:7},{d:'Tue',i:'⛅',h:13,l:6},{d:'Wed',i:'🌧️',h:10,l:5},{d:'Thu',i:'⛅',h:14,l:7},{d:'Fri',i:'☀️',h:17,l:9}] },
+  { id:'losangeles',  name:'Los Angeles',     country:'USA',            continent:'americas', region:'North America',   time:'8:30 AM',  temp:20, feels:19, cond:'Golden morning',        icon:'🌅', dot:'#f97316', humidity:35, wind:8,  vis:20, pressure:1016, uv:4,  aqi:45,  sunrise:'6:30 AM', sunset:'7:30 PM', forecast:[{d:'Mon',i:'☀️',h:24,l:14},{d:'Tue',i:'☀️',h:25,l:15},{d:'Wed',i:'⛅',h:22,l:13},{d:'Thu',i:'☀️',h:24,l:14},{d:'Fri',i:'☀️',h:26,l:15}] },
+  { id:'chicago',     name:'Chicago',         country:'USA',            continent:'americas', region:'North America',   time:'10:30 AM', temp:6,  feels:1,  cond:'Windy city',            icon:'🌬️', dot:'#60a5fa', humidity:52, wind:35, vis:12, pressure:1018, uv:3,  aqi:28,  sunrise:'6:40 AM', sunset:'7:10 PM', forecast:[{d:'Mon',i:'⛅',h:9,l:2},{d:'Tue',i:'☀️',h:12,l:4},{d:'Wed',i:'☀️',h:14,l:5},{d:'Thu',i:'🌧️',h:10,l:3},{d:'Fri',i:'⛅',h:8,l:2}] },
+  { id:'toronto',     name:'Toronto',         country:'Canada',         continent:'americas', region:'North America',   time:'11:30 AM', temp:7,  feels:3,  cond:'Partly cloudy',         icon:'⛅', dot:'#94a3b8', humidity:55, wind:18, vis:14, pressure:1018, uv:3,  aqi:20,  sunrise:'6:55 AM', sunset:'7:35 PM', forecast:[{d:'Mon',i:'☀️',h:10,l:3},{d:'Tue',i:'☀️',h:12,l:4},{d:'Wed',i:'⛅',h:9,l:3},{d:'Thu',i:'🌧️',h:7,l:2},{d:'Fri',i:'⛅',h:8,l:3}] },
+  { id:'vancouver',   name:'Vancouver',       country:'Canada',         continent:'americas', region:'North America',   time:'8:30 AM',  temp:11, feels:8,  cond:'Light rain',            icon:'🌦️', dot:'#60a5fa', humidity:80, wind:15, vis:10, pressure:1012, uv:2,  aqi:18,  sunrise:'6:20 AM', sunset:'7:45 PM', forecast:[{d:'Mon',i:'🌧️',h:12,l:6},{d:'Tue',i:'⛅',h:14,l:7},{d:'Wed',i:'☀️',h:16,l:8},{d:'Thu',i:'⛅',h:13,l:7},{d:'Fri',i:'🌧️',h:11,l:6}] },
+  { id:'mexicocity',  name:'Mexico City',     country:'Mexico',         continent:'americas', region:'Central America', time:'10:30 AM', temp:22, feels:21, cond:'Bright morning',        icon:'☀️', dot:'#fbbf24', humidity:38, wind:6,  vis:18, pressure:1024, uv:7,  aqi:60,  sunrise:'6:10 AM', sunset:'6:30 PM', forecast:[{d:'Mon',i:'☀️',h:25,l:13},{d:'Tue',i:'⛅',h:24,l:12},{d:'Wed',i:'🌧️',h:20,l:12},{d:'Thu',i:'☀️',h:24,l:13},{d:'Fri',i:'☀️',h:26,l:14}] },
+  { id:'bogota',      name:'Bogotá',          country:'Colombia',       continent:'americas', region:'South America',   time:'11:30 AM', temp:14, feels:12, cond:'Andean cool',           icon:'🏔️', dot:'#93c5fd', humidity:70, wind:8,  vis:12, pressure:1018, uv:6,  aqi:40,  sunrise:'5:55 AM', sunset:'6:05 PM', forecast:[{d:'Mon',i:'🌧️',h:16,l:9},{d:'Tue',i:'⛅',h:15,l:8},{d:'Wed',i:'🌧️',h:13,l:8},{d:'Thu',i:'☀️',h:17,l:9},{d:'Fri',i:'⛅',h:15,l:9}] },
+  { id:'saopaulo',    name:'São Paulo',       country:'Brazil',         continent:'americas', region:'South America',   time:'1:30 PM',  temp:25, feels:28, cond:'Afternoon clouds',      icon:'⛅', dot:'#4ade80', humidity:70, wind:9,  vis:12, pressure:1010, uv:6,  aqi:68,  sunrise:'6:10 AM', sunset:'6:20 PM', forecast:[{d:'Mon',i:'🌧️',h:27,l:18},{d:'Tue',i:'⛅',h:26,l:17},{d:'Wed',i:'☀️',h:28,l:18},{d:'Thu',i:'⛅',h:25,l:17},{d:'Fri',i:'🌧️',h:23,l:16}] },
+  { id:'rio',         name:'Rio de Janeiro',  country:'Brazil',         continent:'americas', region:'South America',   time:'1:30 PM',  temp:30, feels:35, cond:'Sunny beach day',       icon:'🏖️', dot:'#fbbf24', humidity:75, wind:12, vis:18, pressure:1008, uv:9,  aqi:42,  sunrise:'5:55 AM', sunset:'6:05 PM', forecast:[{d:'Mon',i:'☀️',h:32,l:22},{d:'Tue',i:'⛅',h:30,l:21},{d:'Wed',i:'🌧️',h:27,l:20},{d:'Thu',i:'☀️',h:31,l:22},{d:'Fri',i:'☀️',h:33,l:23}] },
+  { id:'buenosaires', name:'Buenos Aires',    country:'Argentina',      continent:'americas', region:'South America',   time:'1:30 PM',  temp:20, feels:19, cond:'Sunny & pleasant',      icon:'☀️', dot:'#4ade80', humidity:45, wind:10, vis:20, pressure:1016, uv:5,  aqi:28,  sunrise:'7:00 AM', sunset:'7:20 PM', forecast:[{d:'Mon',i:'☀️',h:23,l:15},{d:'Tue',i:'⛅',h:21,l:14},{d:'Wed',i:'🌧️',h:18,l:12},{d:'Thu',i:'☀️',h:22,l:14},{d:'Fri',i:'☀️',h:24,l:15}] },
+  { id:'santiago',    name:'Santiago',        country:'Chile',          continent:'americas', region:'South America',   time:'1:30 PM',  temp:16, feels:14, cond:'Hazy valley',           icon:'🌫️', dot:'#94a3b8', humidity:48, wind:10, vis:8,  pressure:1018, uv:4,  aqi:55,  sunrise:'7:15 AM', sunset:'7:40 PM', forecast:[{d:'Mon',i:'☀️',h:20,l:11},{d:'Tue',i:'☀️',h:22,l:12},{d:'Wed',i:'⛅',h:18,l:10},{d:'Thu',i:'🌧️',h:14,l:9},{d:'Fri',i:'☀️',h:18,l:10}] },
+  { id:'lima',        name:'Lima',            country:'Peru',           continent:'americas', region:'South America',   time:'11:30 AM', temp:22, feels:22, cond:'Coastal overcast',      icon:'🌥️', dot:'#94a3b8', humidity:80, wind:15, vis:6,  pressure:1014, uv:5,  aqi:48,  sunrise:'6:10 AM', sunset:'6:15 PM', forecast:[{d:'Mon',i:'🌥️',h:23,l:16},{d:'Tue',i:'⛅',h:24,l:17},{d:'Wed',i:'⛅',h:23,l:16},{d:'Thu',i:'🌥️',h:22,l:16},{d:'Fri',i:'⛅',h:23,l:16}] },
+  { id:'sydney',      name:'Sydney',          country:'Australia',      continent:'oceania',  region:'Oceania',         time:'2:30 AM',  temp:23, feels:22, cond:'Mild night',            icon:'🌙', dot:'#5eadf5', humidity:62, wind:14, vis:16, pressure:1014, uv:0,  aqi:20,  sunrise:'6:45 AM', sunset:'7:10 PM', forecast:[{d:'Mon',i:'☀️',h:26,l:18},{d:'Tue',i:'☀️',h:27,l:19},{d:'Wed',i:'⛅',h:24,l:17},{d:'Thu',i:'🌧️',h:21,l:15},{d:'Fri',i:'☀️',h:24,l:17}] },
+  { id:'melbourne',   name:'Melbourne',       country:'Australia',      continent:'oceania',  region:'Oceania',         time:'2:30 AM',  temp:17, feels:14, cond:'Four seasons in one',   icon:'🌦️', dot:'#a78bfa', humidity:68, wind:22, vis:12, pressure:1012, uv:0,  aqi:18,  sunrise:'7:05 AM', sunset:'7:30 PM', forecast:[{d:'Mon',i:'⛅',h:20,l:12},{d:'Tue',i:'🌧️',h:16,l:11},{d:'Wed',i:'☀️',h:22,l:13},{d:'Thu',i:'☀️',h:24,l:14},{d:'Fri',i:'⛅',h:19,l:12}] },
+  { id:'auckland',    name:'Auckland',        country:'New Zealand',    continent:'oceania',  region:'Oceania',         time:'4:30 AM',  temp:19, feels:17, cond:'Cloudy night',          icon:'🌥️', dot:'#94a3b8', humidity:72, wind:18, vis:14, pressure:1010, uv:0,  aqi:15,  sunrise:'7:00 AM', sunset:'7:40 PM', forecast:[{d:'Mon',i:'⛅',h:21,l:14},{d:'Tue',i:'🌧️',h:18,l:13},{d:'Wed',i:'⛅',h:20,l:13},{d:'Thu',i:'☀️',h:22,l:14},{d:'Fri',i:'⛅',h:20,l:13}] },
+  { id:'cairo',       name:'Cairo',           country:'Egypt',          continent:'africa',   region:'Africa',          time:'6:30 PM',  temp:28, feels:27, cond:'Dry & sunny',           icon:'☀️', dot:'#fbbf24', humidity:22, wind:10, vis:20, pressure:1012, uv:0,  aqi:85,  sunrise:'6:05 AM', sunset:'6:20 PM', forecast:[{d:'Mon',i:'☀️',h:31,l:20},{d:'Tue',i:'☀️',h:32,l:21},{d:'Wed',i:'☀️',h:30,l:20},{d:'Thu',i:'⛅',h:28,l:19},{d:'Fri',i:'☀️',h:30,l:20}] },
+  { id:'capetown',    name:'Cape Town',       country:'South Africa',   continent:'africa',   region:'Africa',          time:'6:30 PM',  temp:21, feels:19, cond:'Gorgeous sunset',       icon:'🌇', dot:'#f97316', humidity:58, wind:16, vis:20, pressure:1016, uv:0,  aqi:20,  sunrise:'7:00 AM', sunset:'6:45 PM', forecast:[{d:'Mon',i:'☀️',h:24,l:16},{d:'Tue',i:'☀️',h:25,l:17},{d:'Wed',i:'⛅',h:22,l:15},{d:'Thu',i:'🌧️',h:18,l:14},{d:'Fri',i:'☀️',h:22,l:15}] },
+  { id:'nairobi',     name:'Nairobi',         country:'Kenya',          continent:'africa',   region:'Africa',          time:'7:30 PM',  temp:18, feels:17, cond:'Cool highland evening', icon:'🌄', dot:'#4ade80', humidity:55, wind:8,  vis:18, pressure:1018, uv:0,  aqi:30,  sunrise:'6:25 AM', sunset:'6:30 PM', forecast:[{d:'Mon',i:'⛅',h:22,l:12},{d:'Tue',i:'🌧️',h:20,l:12},{d:'Wed',i:'🌧️',h:19,l:11},{d:'Thu',i:'⛅',h:21,l:12},{d:'Fri',i:'☀️',h:24,l:13}] },
+  { id:'lagos',       name:'Lagos',           country:'Nigeria',        continent:'africa',   region:'Africa',          time:'5:30 PM',  temp:32, feels:38, cond:'Tropical storm',        icon:'⛈️', dot:'#c084fc', humidity:90, wind:20, vis:4,  pressure:1006, uv:0,  aqi:70,  sunrise:'6:30 AM', sunset:'6:30 PM', forecast:[{d:'Mon',i:'⛈️',h:33,l:25},{d:'Tue',i:'🌧️',h:31,l:24},{d:'Wed',i:'⛅',h:32,l:24},{d:'Thu',i:'🌧️',h:30,l:24},{d:'Fri',i:'⛅',h:31,l:24}] },
+];
+
+let active = cities[0];
+let isCelsius = true;
+let currentTab = 'all';
+
+function tempColor(t) {
+  if (t >= 35) return '#f97316';
+  if (t >= 25) return '#fbbf24';
+  if (t >= 15) return '#5eadf5';
+  if (t >= 5)  return '#93c5fd';
+  return '#e0f2fe';
+}
+
+function display(t) {
+  return isCelsius ? t + '°' : Math.round(t * 9/5 + 32) + '°';
+}
+
+function uvLabel(u) {
+  return u <= 2 ? 'Low' : u <= 5 ? 'Moderate' : u <= 7 ? 'High' : 'Very high';
+}
+
+function aqiLabel(a) {
+  return a <= 50 ? 'Good' : a <= 100 ? 'Moderate' : a <= 150 ? 'Unhealthy' : 'Hazardous';
+}
+
+function renderSidebar() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const list = document.getElementById('cityList');
+  list.querySelectorAll('.region-label, .city-item').forEach(e => e.remove());
+
+  const groups = {};
+  cities.forEach(c => {
+    if (currentTab !== 'all' && c.continent !== currentTab) return;
+    if (q && !c.name.toLowerCase().includes(q) && !c.country.toLowerCase().includes(q)) return;
+    (groups[c.region] = groups[c.region] || []).push(c);
+  });
+
+  const noResults = document.getElementById('noResults');
+  let count = 0;
+
+  Object.entries(groups).forEach(([region, items]) => {
+    const lbl = document.createElement('div');
+    lbl.className = 'region-label';
+    lbl.textContent = region;
+    list.insertBefore(lbl, noResults);
+
+    items.forEach(c => {
+      count++;
+      const el = document.createElement('div');
+      el.className = 'city-item' + (c.id === active.id ? ' active' : '');
+      el.dataset.id = c.id;
+      el.innerHTML = `
+        <div class="city-left">
+          <span class="dot" style="background:${c.dot}"></span>
+          <div>
+            <div class="city-name">${c.name}</div>
+            <div class="city-country">${c.country}</div>
+          </div>
+        </div>
+        <div class="city-right">
+          <div class="city-temp" style="color:${tempColor(c.temp)}">${display(c.temp)}</div>
+          <div class="city-time">${c.time}</div>
+        </div>
+      `;
+      el.onclick = () => select(c.id);
+      list.insertBefore(el, noResults);
+    });
+  });
+
+  noResults.classList.toggle('show', count === 0);
+}
+
+function renderHero() {
+  const c = active;
+  const color = tempColor(c.temp);
+  document.getElementById('hero').innerHTML = `
+    <div>
+      <h1 class="hero-city">${c.name}</h1>
+      <div class="hero-sub">${c.country} &nbsp;·&nbsp; ${c.time}</div>
+      <div class="hero-temp-row">
+        <div class="hero-temp" style="color:${color}">${display(c.temp)}</div>
+        <div class="hero-temp-aside">
+          <div class="feels">Feels like</div>
+          <div class="feels-val" style="color:${color}">${display(c.feels)}</div>
+          <div class="condition"><span>${c.icon}</span> ${c.cond}</div>
+        </div>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-label">Humidity</span>
+        <span class="stat-val">${c.humidity}<span class="stat-unit">%</span></span>
+        <div class="stat-note">${c.humidity < 40 ? 'Dry' : c.humidity < 70 ? 'Comfortable' : 'Humid'}</div>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Wind</span>
+        <span class="stat-val">${c.wind}<span class="stat-unit">km/h</span></span>
+        <div class="stat-note">${c.wind < 10 ? 'Calm' : c.wind < 25 ? 'Moderate' : 'Strong'}</div>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Visibility</span>
+        <span class="stat-val">${c.vis}<span class="stat-unit">km</span></span>
+        <div class="stat-note">${c.vis < 4 ? 'Poor' : c.vis < 10 ? 'Fair' : 'Good'}</div>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Pressure</span>
+        <span class="stat-val">${c.pressure}<span class="stat-unit">hPa</span></span>
+        <div class="stat-note">${c.pressure > 1020 ? 'High' : c.pressure > 1010 ? 'Normal' : 'Low'}</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderRight() {
+  const c = active;
+  const uvPct  = Math.min(c.uv  / 11  * 100, 100);
+  const aqiPct = Math.min(c.aqi / 300 * 100, 100);
+  const aqiColor = c.aqi <= 50 ? '#4ade80' : c.aqi <= 100 ? '#fbbf24' : c.aqi <= 150 ? '#f97316' : '#ef4444';
+  const uvColor  = c.uv  <= 2  ? '#4ade80' : c.uv  <= 5  ? '#fbbf24' : c.uv  <= 7  ? '#f97316' : '#ef4444';
+
+  document.getElementById('right').innerHTML = `
+    <div class="panel-section">
+      <div class="panel-title">5-Day Forecast</div>
+      ${c.forecast.map(f => `
+        <div class="forecast-row">
+          <span class="fc-day">${f.d}</span>
+          <span class="fc-icon">${f.i}</span>
+          <span class="fc-temps"><span class="fc-hi">${display(f.h)}</span><span class="fc-lo">${display(f.l)}</span></span>
+        </div>
+      `).join('')}
+    </div>
+    <div class="panel-section">
+      <div class="panel-title">Air & UV</div>
+      <div class="meter">
+        <div class="meter-header"><span class="meter-name">UV Index</span><span class="meter-reading">${c.uv} · ${uvLabel(c.uv)}</span></div>
+        <div class="bar"><div class="bar-fill" style="width:${uvPct}%;background:${uvColor}"></div></div>
+      </div>
+      <div class="meter">
+        <div class="meter-header"><span class="meter-name">Air Quality</span><span class="meter-reading">AQI ${c.aqi} · ${aqiLabel(c.aqi)}</span></div>
+        <div class="bar"><div class="bar-fill" style="width:${aqiPct}%;background:${aqiColor}"></div></div>
+      </div>
+    </div>
+    <div class="panel-section">
+      <div class="panel-title">Sun</div>
+      <div class="sun-row">
+        <div class="sun-card"><div class="ico">🌅</div><div class="lbl">Sunrise</div><div class="val">${c.sunrise}</div></div>
+        <div class="sun-card"><div class="ico">🌇</div><div class="lbl">Sunset</div><div class="val">${c.sunset}</div></div>
+      </div>
+    </div>
+  `;
+}
+
+function select(id) {
+  active = cities.find(c => c.id === id);
+  renderHero();
+  renderRight();
+  document.querySelectorAll('.city-item').forEach(el =>
+    el.classList.toggle('active', el.dataset.id === id)
+  );
+}
+
+function setTab(tab, btn) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderSidebar();
+}
+
+function toggleUnit() {
+  isCelsius = !isCelsius;
+  document.getElementById('unitBtn').textContent = isCelsius ? 'Switch to °F' : 'Switch to °C';
+  renderSidebar();
+  renderHero();
+  renderRight();
+}
+
+document.getElementById('topDate').textContent =
+  new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+renderSidebar();
+renderHero();
+renderRight();
+</script>
+</body>
+</html>
